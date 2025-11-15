@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+  backend:
+    build: ./backend
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL}
+      - FAISS_INDEX_PATH=/data/faiss/index
+      - JUDGE0_URL=http://judge0:2358
+    volumes:
+      - ./backend:/app
+      - faiss_data:/data/faiss
+    depends_on:
+      - mongo
+      - judge0
+    ports:
+      - "8000:8000"
+  judge0:
+    image: judge0/api
+    ports:
+      - "2358:2358"
+  nginx:
+    image: nginx:stable
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certs:/etc/letsencrypt
+
+volumes:
+  mongo_data:
+  faiss_data:

@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pymongo[srv]
+pydantic
+pydantic-settings
+sentence-transformers
+faiss-cpu
+openai
+requests
+beautifulsoup4
+python-multipart
+apscheduler
+python-dotenv
+aiohttp

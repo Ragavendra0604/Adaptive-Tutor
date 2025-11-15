@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+venv/
+backend/venv/
+
+# FAISS data
+backend/faiss_data/
+!backend/faiss_data/.gitkeep
+
+# Mongo local dumps
+*.bson
+*.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor junk
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
