@@ -5,6 +5,7 @@ from bson.objectid import ObjectId
 from bson.errors import InvalidId
 import datetime
 import traceback
+from fastapi.middleware.cors import CORSMiddleware
 
 import os, sys
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -29,6 +30,14 @@ app.include_router(admin.router)
 app.include_router(practice_router)
 app.include_router(stream_router)
 app.include_router(answers_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # or ["http://localhost:5173"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class QueryRequest(BaseModel):
     user_id: str
