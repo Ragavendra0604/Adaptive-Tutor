@@ -6,6 +6,8 @@ from bson.errors import InvalidId
 import datetime
 import traceback
 from fastapi.middleware.cors import CORSMiddleware
+import asyncio 
+import httpx
 
 import os, sys
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -57,6 +59,27 @@ SEED_URLS = [
     "https://www.geeksforgeeks.org/merge-sort/",
     "https://www.geeksforgeeks.org/quick-sort-algorithm/"
 ]
+
+# Health Check
+@app.get("/")
+def read_root():
+    return {"status": "active", "service": "Adaptive Tutor Backend"}
+
+# Keep-Alive Loop
+async def run_keep_alive():
+    # Pings the backend every 10 minutes (600 seconds) 
+    url = "https://adaptive-tutor.onrender.com/" 
+    
+    async with httpx.AsyncClient() as client:
+        while True:
+            try:
+                print(f"Keeping alive: Pinging {url}...")
+                await client.get(url)
+            except Exception as e:
+                print(f"Keep-alive ping failed: {e}")
+            
+            # Sleep for 10 minutes (Render sleeps after 15 mins)
+            await asyncio.sleep(600)
 
 def get_docs(query_text):
     # 1) attempt retrieval from DB
@@ -122,6 +145,8 @@ async def startup_event():
         print("FAISS index loaded on startup. ntotal:", getattr(idx.index, "ntotal", 0))
     except Exception as e:
         print("Warning: failed to load FAISS index on startup:", e)
+
+    async.create_task(run_keep_alive())
     
 # accept both /v1/query and /v1/query/
 @app.post("/v1/query")
