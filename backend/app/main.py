@@ -64,7 +64,7 @@ SEED_URLS = [
 @app.get("/")
 def read_root():
     return {"status": "active", "service": "Adaptive Tutor Backend"}
-
+    
 # Keep-Alive Loop
 async def run_keep_alive():
     # Pings the backend every 10 minutes (600 seconds) 
@@ -80,6 +80,37 @@ async def run_keep_alive():
             
             # Sleep for 10 minutes (Render sleeps after 15 mins)
             await asyncio.sleep(600)
+
+@app.on_event("startup")
+async def startup_event():
+    # 1. Start Scheduler
+    start_scheduler()
+    
+    # 2. Initialize & Rebuild Brain (FAISS)
+    try:
+        idx = get_index()
+        
+        # Try loading from disk first
+        try:
+            idx.load()
+        except Exception:
+            pass # It's okay if file doesn't exist yet on Render
+
+        # CHECK: Is the brain empty?
+        if not idx.index or idx.index.ntotal == 0:
+            print("Index is empty (Render cold start). Rebuilding from MongoDB...")
+            # This pulls the 60 docs from your image and puts them into RAM
+            count = idx.build_from_db() 
+            print(f"Brain rebuilt! Loaded {count} documents.")
+        else:
+            print(f"Index loaded from disk. Total documents: {idx.index.ntotal}")
+            
+    except Exception as e:
+        print("Warning: Failed to load FAISS index:", e)
+        traceback.print_exc()
+        
+    # 3. Start Keep-Alive (to prevent sleeping)
+    asyncio.create_task(run_keep_alive())
 
 def get_docs(query_text):
     # 1) attempt retrieval from DB
@@ -132,21 +163,6 @@ def get_docs(query_text):
     if not docs:
         raise HTTPException(status_code=404, detail="No relevant documents found, and fallback scraping failed.")
     return docs
-
-
-@app.on_event("startup")
-async def startup_event():
-    # start scheduler
-    start_scheduler()
-    # ensure FAISS index is loaded into memory at server start
-    try:
-        idx = get_index()
-        idx.load()
-        print("FAISS index loaded on startup. ntotal:", getattr(idx.index, "ntotal", 0))
-    except Exception as e:
-        print("Warning: failed to load FAISS index on startup:", e)
-
-    asyncio.create_task(run_keep_alive())
     
 # accept both /v1/query and /v1/query/
 @app.post("/v1/query")
