@@ -1,20 +1,21 @@
 import React, { useState, useRef } from "react";
 import { createChatWebSocket } from "../api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 
 export default function ChatPage() {
   const [userId, setUserId] = useState("user1");
   const [query, setQuery] = useState("");
-  const [messages, setMessages] = useState([]); // {role, text}
+  const [messages, setMessages] = useState([]); 
   const [isStreaming, setIsStreaming] = useState(false);
   const wsRef = useRef(null);
 
   const handleSend = () => {
     if (!query.trim()) return;
 
-    // add user message
     setMessages((prev) => [...prev, { role: "user", text: query }]);
 
-    // open WebSocket
     const ws = createChatWebSocket();
     wsRef.current = ws;
     setIsStreaming(true);
@@ -29,12 +30,14 @@ export default function ChatPage() {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+
         if (data.type === "token") {
           assistantBuffer += data.text;
-          // replace last assistant message live
+
           setMessages((prev) => {
             const clone = [...prev];
             const last = clone[clone.length - 1];
+
             if (last && last.role === "assistant_stream") {
               clone[clone.length - 1] = { ...last, text: assistantBuffer };
             } else {
@@ -42,7 +45,9 @@ export default function ChatPage() {
             }
             return clone;
           });
-        } else if (data.type === "done") {
+        }
+
+        else if (data.type === "done") {
           setIsStreaming(false);
           setMessages((prev) =>
             prev.map((m) =>
@@ -52,7 +57,9 @@ export default function ChatPage() {
             )
           );
           ws.close();
-        } else if (data.type === "error") {
+        }
+
+        else if (data.type === "error") {
           setIsStreaming(false);
           setMessages((prev) => [
             ...prev,
@@ -60,6 +67,7 @@ export default function ChatPage() {
           ]);
           ws.close();
         }
+
       } catch (err) {
         console.error("WS parse error", err);
       }
@@ -85,14 +93,7 @@ export default function ChatPage() {
         Interactive Concept Navigator
       </p>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "0.75rem",
-          marginBottom: "1rem",
-          flexWrap: "wrap"
-        }}
-      >
+      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <div>
           <label style={{ fontSize: "0.8rem", color: "#9ca3af" }}>User ID</label>
           <input
@@ -121,15 +122,6 @@ export default function ChatPage() {
           overflowY: "auto"
         }}
       >
-        {messages.length === 0 && (
-          <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>
-            Start by asking something like:
-            <br />
-            <code style={{ fontSize: "0.85rem" }}>
-              &quot;Explain BFS with example&quot;
-            </code>
-          </div>
-        )}
         {messages.map((m, idx) => (
           <div
             key={idx}
@@ -140,9 +132,7 @@ export default function ChatPage() {
               background:
                 m.role === "user"
                   ? "rgba(59,130,246,0.1)"
-                  : m.role === "assistant" || m.role === "assistant_stream"
-                  ? "rgba(16,185,129,0.08)"
-                  : "rgba(148,163,184,0.1)"
+                  : "rgba(16,185,129,0.08)"
             }}
           >
             <div
@@ -155,9 +145,51 @@ export default function ChatPage() {
             >
               {m.role}
             </div>
-            <div style={{ fontSize: "0.9rem", whiteSpace: "pre-wrap" }}>
+
+            {/* ⭐ Improved Markdown Renderer */}
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: (props) => <h1 style={{ color: "#38bdf8" }} {...props} />,
+                h2: (props) => <h2 style={{ color: "#67e8f9" }} {...props} />,
+                h3: (props) => <h3 style={{ color: "#a5f3fc" }} {...props} />,
+                p: (props) => <p style={{ margin: "0.3rem 0" }} {...props} />,
+                ul: (props) => <ul style={{ marginLeft: "1.2rem" }} {...props} />,
+                ol: (props) => <ol style={{ marginLeft: "1.2rem" }} {...props} />,
+                blockquote: (props) => (
+                  <blockquote
+                    style={{
+                      borderLeft: "4px solid #4b5563",
+                      paddingLeft: "0.7rem",
+                      opacity: 0.85,
+                      margin: "0.5rem 0"
+                    }}
+                    {...props}
+                  />
+                ),
+                code({ inline, className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || "");
+                  return !inline ? (
+                    <SyntaxHighlighter language={match?.[1] || "text"}>
+                      {String(children).replace(/\n$/, "")}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code
+                      {...props}
+                      style={{
+                        background: "#1e293b",
+                        padding: "2px 4px",
+                        borderRadius: "4px"
+                      }}
+                    >
+                      {children}
+                    </code>
+                  );
+                }
+              }}
+            >
               {m.text}
-            </div>
+            </ReactMarkdown>
           </div>
         ))}
       </div>
@@ -178,6 +210,7 @@ export default function ChatPage() {
             resize: "none"
           }}
         />
+
         <button
           onClick={handleSend}
           disabled={isStreaming}
