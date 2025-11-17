@@ -82,7 +82,7 @@ export default function ChatPage() {
     <div>
       <h1 style={{ fontSize: "1.5rem", marginBottom: "0.75rem" }}>Chat Tutor</h1>
       <p style={{ fontSize: "0.9rem", color: "#9ca3af", marginBottom: "1.5rem" }}>
-        Ask DSA doubts. Backend uses your RAG + OpenRouter / fallback summarizer.
+        Interactive Concept Navigator
       </p>
 
       <div

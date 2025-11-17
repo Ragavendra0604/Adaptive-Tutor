@@ -1,21 +1,51 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { postJSON } from "../api";
+import { TestResultViewer } from "../components/TestResultViewer"; 
 
 export default function PracticePage() {
   const [userId, setUserId] = useState("user1");
-  const [concept, setConcept] = useState("binary_search");
+  const [concept, setConcept] = useState(""); 
   const [mastery, setMastery] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [languageId, setLanguageId] = useState(71);
   const [loading, setLoading] = useState(false);
   const [submitLogs, setSubmitLogs] = useState({});
+  
+  // FIX: Initialize as empty array, not object
+  const [conceptList, setConceptList] = useState([]);
+
+  // 1. Fetch the concepts list on mount
+  useEffect(() => {
+    const fetchConcepts = async () => {
+      try {
+        // Use relative path if using proxy, or full URL
+        const res = await fetch("http://localhost:8000/v1/concepts");
+        const data = await res.json();
+        
+        if (data.concepts && Array.isArray(data.concepts)) {
+          setConceptList(data.concepts);
+          // Auto-select the first concept if none is selected
+          if (data.concepts.length > 0) {
+            setConcept(data.concepts[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load concepts:", err);
+      }
+    };
+    fetchConcepts();
+  }, []);
 
   const handleLoadUser = async () => {
     await postJSON("/v1/user", { user_id: userId });
   };
 
   const handleFetchQuestions = async () => {
+    if (!concept) {
+      alert("Please select a concept first.");
+      return;
+    }
     setLoading(true);
     setSubmitLogs({});
     try {
@@ -42,10 +72,8 @@ export default function PracticePage() {
 
   const detectCodeQuestion = (q) => {
     return (
-      q.type === "code" ||
-      (q.testcases && q.testcases.length > 0) ||
-      (q.question && q.question.toLowerCase().includes("implement")) ||
-      (q.question && q.question.toLowerCase().includes("write"))
+      q.type === "code" || 
+      (q.testcases && Array.isArray(q.testcases) && q.testcases.length > 0)
     );
   };
 
@@ -114,26 +142,59 @@ export default function PracticePage() {
     );
   };
 
-
   return (
     <div style={{ padding: "1rem" }}>
       <h1>Practice</h1>
 
       {/* Controls */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <input
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           placeholder="User ID"
+          style={{
+             padding: "0.5rem", 
+             borderRadius: "0.3rem", 
+             border: "1px solid #334155", 
+             background: "#020617", 
+             color: "white"
+          }}
         />
 
-        <input
+        {/* DROPDOWN MENU */}
+        <select
           value={concept}
           onChange={(e) => setConcept(e.target.value)}
-          placeholder="Concept (e.g., binary_search)"
-        />
+          style={{ 
+            padding: "0.5rem", 
+            borderRadius: "0.3rem", 
+            border: "1px solid #334155", 
+            background: "#020617", 
+            color: "white",
+            minWidth: "220px",
+            cursor: "pointer"
+          }}
+        >
+          <option value="" disabled>Select a Concept</option>
+          {conceptList.map((c) => (
+            <option key={c} value={c}>
+              {c.replace(/_/g, " ")}
+            </option>
+          ))}
+        </select>
 
-        <button onClick={handleFetchQuestions}>
+        <button 
+          onClick={handleFetchQuestions}
+          style={{ 
+             padding: "0.5rem 1rem", 
+             borderRadius: "0.3rem", 
+             background: "#38bdf8", 
+             border: "none", 
+             cursor: "pointer", 
+             fontWeight: "bold",
+             color: "#020617"
+          }}
+        >
           {loading ? "Loading..." : "Get Questions"}
         </button>
       </div>
@@ -173,7 +234,8 @@ export default function PracticePage() {
                 borderRadius: "0.4rem",
                 background: "#111827",
                 color: "#fff",
-                border: "1px solid #334155"
+                border: "1px solid #334155",
+                fontFamily: isCode ? "monospace" : "inherit"
               }}
             />
 
@@ -185,29 +247,16 @@ export default function PracticePage() {
                 padding: "0.5rem 1rem",
                 borderRadius: "0.3rem",
                 border: "none",
-                cursor: "pointer"
+                cursor: "pointer",
+                fontWeight: "600"
               }}
             >
               Submit Answer
             </button>
 
+            {/* Uses the Safe TestResultViewer */}
             {log && (
-              <div style={{
-                marginTop: "0.6rem",
-                padding: "0.6rem",
-                background: "#0f172a",
-                borderRadius: "0.4rem",
-                border: "1px solid #1e293b"
-              }}>
-                <div>Score: {log.score.toFixed(2)} | Quality: {log.quality}</div>
-                <pre style={{
-                  whiteSpace: "pre-wrap",
-                  marginTop: "0.5rem",
-                  color: "#94a3b8"
-                }}>
-                  {JSON.stringify(log.details, null, 2)}
-                </pre>
-              </div>
+              <TestResultViewer result={log} />
             )}
           </div>
         );

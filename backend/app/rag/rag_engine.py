@@ -20,11 +20,11 @@ from ..core.config import settings
 
 def build_excerpts(docs):
     snippets = []
-    for d in docs[:3]:
-        src = d["doc"].get("url", "")
+    for i, d in enumerate(docs[:3]):
+        src = d["doc"].get("url", "unknown")
         txt = d["doc"].get("text", "")
-        snippet = txt.replace("\n", " ").strip()[:800]
-        snippets.append(f"SOURCE: {src}\n{snippet}")
+        snippet = txt.replace("\n", " ").strip()[:1000] 
+        snippets.append(f"--- SOURCE {i+1}: {src} ---\n{snippet}")
     return "\n\n".join(snippets)
 
 def _local_summarize(user_query: str, docs):

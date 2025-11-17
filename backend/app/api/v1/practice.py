@@ -33,6 +33,14 @@ def create_user(u: UserCreate):
     db.users.update_one({"user_id": u.user_id}, {"$set": doc}, upsert=True)
     return {"status": "ok"}
 
+@router.get("/concepts")
+def get_unique_concepts():
+    """
+    Returns a list of all unique concepts available in the question bank.
+    Useful for populating dropdowns on the frontend.
+    """
+    concepts = db.question_bank.distinct("concept")
+    return {"concepts": sorted(concepts)}
 
 @router.get("/user/{user_id}")
 def get_user(user_id: str):
