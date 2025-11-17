@@ -20,7 +20,8 @@ export default function PracticePage() {
     const fetchConcepts = async () => {
       try {
         // Use relative path if using proxy, or full URL
-        const res = await fetch("http://localhost:8000/v1/concepts");
+        const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+        const res = await fetch(`${API_BASE}/v1/concepts`);
         const data = await res.json();
         
         if (data.concepts && Array.isArray(data.concepts)) {
