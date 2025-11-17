@@ -1,12 +1,12 @@
 # backend/app/main.py
+import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 import datetime
 import traceback
-from fastapi.middleware.cors import CORSMiddleware
-import asyncio 
+from fastapi.middleware.cors import CORSMiddleware 
 import httpx
 
 import os, sys
@@ -146,7 +146,7 @@ async def startup_event():
     except Exception as e:
         print("Warning: failed to load FAISS index on startup:", e)
 
-    async.create_task(run_keep_alive())
+    asyncio.create_task(run_keep_alive())
     
 # accept both /v1/query and /v1/query/
 @app.post("/v1/query")
