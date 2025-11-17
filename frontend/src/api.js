@@ -22,10 +22,17 @@ export async function getJSON(path) {
   return res.json();
 }
 
-export function createChatWebSocket() {
-  // ws:// or wss:// based on API_BASE_URL
-  const url = new URL(API_BASE_URL);
-  const wsProtocol = url.protocol === "https:" ? "wss:" : "ws:";
-  const wsBase = `${wsProtocol}//${url.host}`;
-  return new WebSocket(`${wsBase}/v1/ws/chat`);
-}
+export const createChatWebSocket = () => {
+  let url = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+  url = url.replace(/^http/, "ws");
+
+  if (url.endsWith("/")) {
+    url = url.slice(0, -1);
+  }
+  
+  const wsUrl = `${url}/v1/ws/chat`;
+
+  console.log("Connecting to WebSocket:", wsUrl); // log
+  return new WebSocket(wsUrl);
+};
